@@ -1,0 +1,107 @@
+version: "3.7"
+services:
+
+  redis-sentinel:
+    image: bitnami/redis-sentinel:latest
+    volumes:
+      - stack-redis_sentinel-conf:/etc/redis
+    depends_on:
+      - redis-master
+      - redis-slave-node1
+      - redis-slave-node2
+    deploy:
+      mode: global
+    environment:
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PASSWORD=LasYWpB1oHRS2zY15BLgBJ*tc1&AlgTK
+      - SENTINEL_DOWN_AFTER=5000
+      - SENTINEL_FAILOVER=15000
+    ports:
+      - '26379:26379'
+    networks:
+      - cluster
+      - cluster_prod
+
+  redis-master:
+    image: redis/redis-stack-server:latest
+    volumes:
+      - stack-redis_data:/data
+      - stack-redis_conf:/etc/redis
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_PASSWORD=LasYWpB1oHRS2zY15BLgBJ*tc1&AlgTK
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.hostname == lincros-frotas01
+    ports:
+      - '6379:6379'
+    networks:
+      - cluster
+      - cluster_prod
+    labels:
+      - 'traefik.port=6379'
+      - 'traefik.docker.network=cluster_prod'
+      - 'traefik.backend.loadbalancer.swarm=true'
+      - 'traefik.frontend.rule=Host:redis-tracking.lincros.com;'
+
+  redis-slave-node1:
+    image: redis/redis-stack-server:latest
+    volumes:
+      - stack-redis_data:/data
+      - stack-redis_conf:/etc/redis
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_PASSWORD=LasYWpB1oHRS2zY15BLgBJ*tc1&AlgTK
+      - REDIS_PASSWORD=Tr^FkM^EZYL%@vPcJD44
+    depends_on:
+      - redis-master
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.hostname == lincros-frotas02
+    ports:
+      - '6379'
+    networks:
+      - cluster
+      - cluster_prod
+
+  redis-slave-node2:
+    image: redis/redis-stack-server:latest
+    volumes:
+      - stack-redis_data:/data
+      - stack-redis_conf:/etc/redis
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_PASSWORD=LasYWpB1oHRS2zY15BLgBJ*tc1&AlgTK
+      - REDIS_PASSWORD=Tr^FkM^EZYL%@vPcJD44
+    depends_on:
+      - redis-master
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.hostname == lincros-frotas03
+    ports:
+      - '6379'
+    networks:
+      - cluster
+      - cluster_prod
+
+volumes:
+  stack-redis_data:
+  stack-redis_conf:
+  stack-redis_sentinel-conf:
+networks:
+  cluster:
+    driver: overlay
+    external: true
+  cluster_prod:
+    driver: overlay
+    external: true 

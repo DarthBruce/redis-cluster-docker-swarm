@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    environment:
+      - REDIS_PASSWORD=LasYWpB1oHRS2zY15BLgBJ*tc1&AlgTK
+    networks:
+      - cluster_prod
+    labels:
+      - 'traefik.port=6379'
+      - 'traefik.docker.network=cluster_prod'
+      - 'traefik.backend.loadbalancer.swarm=true'
+      - 'traefik.frontend.rule=Host:redis-tracking.lincros.com;'
+
+networks:
+  cluster_prod:
+    driver: overlay
+    external: true 
